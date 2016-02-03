@@ -11,7 +11,7 @@
 @class NSManagedObjectContext;
 @interface KSLocalDbManagerBase : NSObject
 @property (nonatomic, weak, readonly) NSManagedObjectContext *managedObjectContext;
-#pragma mark - Overrides
+#pragma mark - Overridden
 -(NSURL*)modelUrl;
 -(NSURL*)storeUrl;
 - (BOOL)saveManagedObjectContext;

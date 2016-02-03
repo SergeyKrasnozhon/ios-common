@@ -16,7 +16,7 @@
 
 @implementation KSLocalDbManagerBase
 
-#pragma mark - Overrides
+#pragma mark - Overridden
 -(NSURL*)modelUrl{
     NSAssert(0, @"%@:%@ should be overrided", NSStringFromClass([self class]), NSStringFromSelector(_cmd));
     return nil;
@@ -99,10 +99,12 @@
     if(nil != _mainManagedObjectContext)
         return _mainManagedObjectContext;
     void(^initializeContext)() = ^{
-        NSPersistentStoreCoordinator *store = self.persistentStoreCoordinator;
-        if(nil != store){
-            _mainManagedObjectContext = [[NSManagedObjectContext alloc] initWithConcurrencyType:NSMainQueueConcurrencyType];
-            [_mainManagedObjectContext setPersistentStoreCoordinator:store];
+        @synchronized(self) {
+            NSPersistentStoreCoordinator *store = self.persistentStoreCoordinator;
+            if(nil != store){
+                _mainManagedObjectContext = [[NSManagedObjectContext alloc] initWithConcurrencyType:NSMainQueueConcurrencyType];
+                [_mainManagedObjectContext setPersistentStoreCoordinator:store];
+            }
         }
     };
     if(![[NSThread currentThread] isMainThread]){
