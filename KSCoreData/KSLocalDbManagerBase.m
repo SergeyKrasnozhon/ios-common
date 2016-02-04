@@ -12,6 +12,8 @@
 @property (nonatomic, strong) NSManagedObjectModel *managedObjectModel;
 @property (nonatomic, strong) NSPersistentStoreCoordinator *persistentStoreCoordinator;
 @property (nonatomic, strong) NSManagedObjectContext *mainManagedObjectContext;
+
+@property (nonatomic) NSString *storePathHash;
 @end
 
 @implementation KSLocalDbManagerBase
@@ -53,15 +55,21 @@
 }
 
 #pragma mark - Accessors
+-(NSString *)storePathHash{
+    if(!_storePathHash) _storePathHash = [NSString stringWithFormat:@"%zd", [[[self storeUrl] relativeString] hash]];
+    return _storePathHash;
+}
+
 -(NSManagedObjectContext *)managedObjectContext{
     NSThread *currentThread = [NSThread currentThread];
-    NSManagedObjectContext *privateContext = [[currentThread threadDictionary] objectForKey:@"managedObjectContext"];
+    NSString *key = [NSString stringWithFormat:@"managedObjectContext:[%@]", self.storePathHash];
+    NSManagedObjectContext *privateContext = [[currentThread threadDictionary] objectForKey:key];
     if(privateContext) return privateContext;
     if([currentThread isMainThread]) return self.mainManagedObjectContext;
     
     privateContext = [[NSManagedObjectContext alloc] initWithConcurrencyType:NSPrivateQueueConcurrencyType];
     [privateContext setParentContext:self.mainManagedObjectContext];
-    [[currentThread threadDictionary] setObject:privateContext forKey:@"managedObjectContext"];
+    [[currentThread threadDictionary] setObject:privateContext forKey:key];
     return privateContext;
 }
 
@@ -90,14 +98,13 @@
         NSLog(@"Unresolved error %@, %@", error, [error userInfo]);
         abort();
     }
-    
     return _persistentStoreCoordinator;
 }
 
 - (NSManagedObjectContext *)mainManagedObjectContext
 {
-    if(nil != _mainManagedObjectContext)
-        return _mainManagedObjectContext;
+    if(nil != _mainManagedObjectContext) return _mainManagedObjectContext;
+    
     void(^initializeContext)() = ^{
         @synchronized(self) {
             NSPersistentStoreCoordinator *store = self.persistentStoreCoordinator;
